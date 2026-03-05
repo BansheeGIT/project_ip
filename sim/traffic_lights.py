@@ -4,6 +4,7 @@ import os
 import sys
 
 import pygame
+from config import TRAFFIC_LIGHT_POS
 
 try:
     from .map import MAP_HEIGHT, MAP_WIDTH
@@ -43,11 +44,6 @@ def main() -> int:
         pygame.quit()
         return 1
 
-    traffic_lights_pos = [
-        (600, 450),
-        (870, 150),
-    ]
-
     world = World()
     world.spawn_vehicle(direction="N", x=920, y=0, speed=200)
 
@@ -65,8 +61,9 @@ def main() -> int:
         world.step(dt)
 
         screen.blit(map_img, (0, 0))
-        for pos in traffic_lights_pos:
-            if pos == (600, 450):
+        for tl in TRAFFIC_LIGHT_POS:
+            pos = tl.get("pos", tl["center"])
+            if tl["axis"] == "NS":
                 screen.blit(ns_light_mini, pos)
             else:
                 screen.blit(ew_light_mini, pos)

@@ -19,11 +19,23 @@ OUT_OF_BOUNDS = {
 
 # Координаты стоп-линий (где останавливаться на красный) - Abdil
 STOP_LINES = {
-    "N": {"y": 280}, 
+    "N": {"y": 650}, 
     "S": {"y": 795},
     "W": {"x": 691},
     "E": {"x": 1245},
 }
+
+# Traffic light sprite anchors (kept in one shared place).
+TRAFFIC_LIGHT_POS = [
+    {
+        "axis": "NS",
+        "center": (600, 160),
+    },
+    {
+        "axis": "EW",
+        "center": (900, 440),
+    },
+]
 
 # Common desktop window presets for simulation display scaling. - Abdil
 WINDOW_SIZE_PRESETS = {

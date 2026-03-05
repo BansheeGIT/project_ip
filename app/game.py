@@ -5,9 +5,14 @@ from __future__ import annotations
 import sys
 import pygame
 
+from mqtt.client import LocalBroker, MqttClient
+from nodes.actuator_node import ActuatorNode
+from nodes.controller_node import ControllerNode
+from nodes.monitor_node import MonitorNode
+from nodes.sensor_node import SensorNode
 from sim.world import World
 from sim.spawner import Spawner
-from sim.metrics import count_queues
+from sim.metrics import EfficiencyLogger, count_queues
 from traffic.controller_logic import TrafficController
 from traffic.phases import ALL_RED, EW_GREEN, EW_YELLOW, NS_GREEN, NS_YELLOW
 
@@ -39,6 +44,7 @@ class Game:
         sim_width: int,
         sim_height: int,
         project_dir: str,
+        mode: str = "fixed",
         window_width: int = START_WINDOW_WIDTH,
         window_height: int = START_WINDOW_HEIGHT,
     ) -> None:
@@ -48,6 +54,7 @@ class Game:
         self.sim_width = sim_width
         self.sim_height = sim_height
         self.project_dir = project_dir
+        self.mode = mode
 
         self.window_width, self.window_height = self._normalize_window_size(
             window_width, window_height
@@ -101,8 +108,17 @@ class Game:
         self.world = World()
         self.spawner = Spawner(self.world)
         self.controller = TrafficController()
+        self.broker = None
+        self.mqtt_client = None
+        self.sensor_node = None
+        self.smart_controller = None
+        self.actuator_node = None
+        self.monitor_node = None
+        self.last_smart_reason = ""
         # Keep baseline spawn rates so "traffic load" can scale from known defaults.
         self.base_spawn_rates = self.spawner.RATES.copy()
+        self._setup_control_mode()
+        self.logger = EfficiencyLogger(mode=self.mode, project_dir=self.project_dir)
 
         # Interactive widgets in the side panel.
         self.buttons: list[Button] = []
@@ -110,7 +126,6 @@ class Game:
         self.load_slider: Slider | None = None
         self._build_controls()
         self._apply_spawn_rates()
-        self._set_phase_state(self.controller.current_phase)
 
     def _normalize_window_size(self, width: int, height: int) -> tuple[int, int]:
         min_window_width = self.PANEL_WIDTH + self.MIN_VIEW_WIDTH
@@ -278,6 +293,24 @@ class Game:
         else:
             self.world.green_axis = ""
 
+    def _setup_control_mode(self) -> None:
+        if self.mode == "mqtt-smart":
+            self.broker = LocalBroker()
+            self.mqtt_client = MqttClient(self.broker, "game-main")
+            self.sensor_node = SensorNode(self.mqtt_client)
+            self.smart_controller = ControllerNode(self.mqtt_client)
+            self.actuator_node = ActuatorNode(self.mqtt_client)
+            self.monitor_node = MonitorNode(self.mqtt_client)
+            self._set_phase_state(self.smart_controller.current_phase)
+        else:
+            self.broker = None
+            self.mqtt_client = None
+            self.sensor_node = None
+            self.smart_controller = None
+            self.actuator_node = None
+            self.monitor_node = None
+            self._set_phase_state(self.controller.current_phase)
+
     def _apply_spawn_rates(self) -> None:
         """Scale per-direction spawn intervals by the current traffic load."""
         for direction, base_rate in self.base_spawn_rates.items():
@@ -289,6 +322,7 @@ class Game:
 
     def _reset_simulation(self) -> None:
         """Recreate world/controller state and keep current GUI tuning values."""
+        self.logger.close()
         self.world = World()
         self.spawner = Spawner(self.world)
         self.controller = TrafficController()
@@ -296,16 +330,20 @@ class Game:
         self.sim_time = 0.0
         self.queue_ns = 0
         self.queue_ew = 0
-        self._set_phase_state(self.controller.current_phase)
+        self.last_smart_reason = ""
+        self._setup_control_mode()
+        self.logger = EfficiencyLogger(mode=self.mode, project_dir=self.project_dir)
 
     def _toggle_phase(self) -> None:
         """Manual override: force the controller to switch traffic phase."""
+        if self.mode == "mqtt-smart":
+            return
         self.controller.switch_phase()
         self._set_phase_state(self.controller.current_phase)
 
     def _spawn_vehicle(self, direction: str) -> None:
         """Manual vehicle injection for quick scenario testing."""
-        self.spawner.spawn(direction)
+        self.spawner.spawn_car(direction)
 
     def handle_events(self) -> None:
         """Route input to widgets, keyboard shortcuts, then optional debug overlay."""
@@ -394,11 +432,19 @@ class Game:
         # Standard simulation pipeline.
         self.spawner.step(scaled_dt)
         self.queue_ns, self.queue_ew = count_queues(self.world)
-        emergency_active, emergency_axis = self.world.compute_preemption_state()
-        self.controller.set_preemption(emergency_active, emergency_axis)
-        next_phase = self.controller.decide(scaled_dt, self.queue_ns, self.queue_ew)
+        if self.mode == "mqtt-smart":
+            self.sensor_node.publish_snapshots(self.world, self.sim_time)
+            self.smart_controller.decide(scaled_dt, self.sim_time)
+            next_phase = self.actuator_node.current_phase or self.smart_controller.current_phase
+            self.last_smart_reason = self.monitor_node.latest_reason()
+        else:
+            emergency_active, emergency_axis = self.world.compute_preemption_state()
+            self.controller.set_preemption(emergency_active, emergency_axis)
+            next_phase = self.controller.decide(scaled_dt, self.queue_ns, self.queue_ew)
         self._set_phase_state(next_phase)
+        self.world.update_pedestrians(scaled_dt, phase=next_phase)
         self.world.step(scaled_dt)
+        self.logger.step(self.world, scaled_dt, self.sim_time)
 
     def _draw_panel(self, panel_left_x: int) -> None:
         """Draw side-panel shell, status telemetry, controls, and help text."""
@@ -433,17 +479,22 @@ class Game:
         ) else str(self.phase)
         state_name = "Paused" if self.paused else "Running"
         vehicles = len(self.world.vehicles)
+        pedestrians = len(self.world.pedestrians)
         fps = self.clock.get_fps()
 
         status_lines = [
             f"State: {state_name}",
+            f"Mode: {self.mode}",
             f"Phase: {phase_name}",
             f"Vehicles: {vehicles}",
+            f"Pedestrians: {pedestrians}",
             f"Queue NS: {self.queue_ns}",
             f"Queue EW: {self.queue_ew}",
             f"FPS: {fps:.1f}",
             f"Sim Time: {self.sim_time:.1f}s",
         ]
+        if self.mode == "mqtt-smart" and self.last_smart_reason:
+            status_lines.append(f"Smart reason: {self.last_smart_reason}")
         y = 102
         for line in status_lines:
             text = self.panel_small_font.render(line, True, TEXT_COLOR)
@@ -530,5 +581,6 @@ class Game:
             self.update(dt)
             self.draw()
 
+        self.logger.close()
         pygame.quit()
         sys.exit()

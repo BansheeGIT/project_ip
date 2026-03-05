@@ -3,6 +3,7 @@ import random
 from sim.map import SPAWN_POINTS
 
 EMERGENCY_CHANCE = 0.02
+EMERGENCY_SIREN_CHANCE = 0.55
 
 class Spawner:
     def __init__(self, world):
@@ -38,7 +39,13 @@ class Spawner:
         is_emergency = random.random() < EMERGENCY_CHANCE
         
         if is_emergency:
-            self.world.spawn_emergency(direction, x, y, speed + 100)
+            sirens_on = random.random() < EMERGENCY_SIREN_CHANCE
+            bonus_speed = 100 if sirens_on else 40
+            self.world.spawn_emergency(direction, x, y, speed + bonus_speed, sirens_on=sirens_on)
         else:
             self.world.spawn_vehicle(direction, x, y, speed)
         return True
+
+    def spawn(self, direction):
+        """Backward-compatible alias used by UI manual spawn controls."""
+        return self.spawn_car(direction)

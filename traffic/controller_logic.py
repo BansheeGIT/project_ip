@@ -5,7 +5,7 @@ class TrafficController:
         self.current_phase = NS_GREEN
         self.next_green_phase = None
         self.timer = 0.0
-        self.FIXED_TIME = 10.0 
+        self.GREEN_TIME = 20.0
         self.YELLOW_TIME = 2.0
         self.ALL_RED_TIME = 1.0
         self.emergency_active = False
@@ -27,11 +27,13 @@ class TrafficController:
     def decide(self, dt, queue_ns, queue_ew):
         if self.emergency_active and self.emergency_axis:
             self.current_phase = NS_GREEN if self.emergency_axis == "NS" else EW_GREEN
+            self.timer = 0.0
             return self.current_phase
 
         self.timer += dt
         if self.current_phase in (NS_GREEN, EW_GREEN):
-            if self.timer >= self.FIXED_TIME: self._start_transition()
+            if self.timer >= self.GREEN_TIME:
+                self._start_transition()
         elif self.current_phase in (NS_YELLOW, EW_YELLOW):
             if self.timer >= self.YELLOW_TIME:
                 self.current_phase = ALL_RED

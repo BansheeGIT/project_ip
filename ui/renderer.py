@@ -1,6 +1,7 @@
 # ui/renderer.py
 import pygame
 from .assets import Assets
+from config import TRAFFIC_LIGHT_POS
 from traffic.phases import ALL_RED, EW_GREEN, EW_YELLOW, NS_GREEN, NS_YELLOW
 from dataclasses import dataclass
 
@@ -10,20 +11,29 @@ class TrafficLightSprite:
     axis: str
 
 def default_traffic_lights():
-    return [TrafficLightSprite((820, 400), "EW"), TrafficLightSprite((1100, 680), "NS")]
+    return [
+        TrafficLightSprite(
+            pos=tl["center"],
+            axis=tl["axis"],
+        )
+        for tl in TRAFFIC_LIGHT_POS
+    ]
 
-def render_frame(screen, assets, font, world, phase, q_ns, q_ew, traffic_lights=None):
+def render_frame(
+    screen,
+    assets,
+    font,
+    world,
+    phase,
+    queue_ns=0,
+    queue_ew=0,
+    traffic_lights=None,
+):
+    # Queue args are kept for compatibility with the Game draw call.
+    _ = (queue_ns, queue_ew)
     if traffic_lights is None: traffic_lights = default_traffic_lights()
     screen.blit(assets.map_img, (0, 0))
 
-    # Светофоры
-    for tl in traffic_lights:
-        color = "red"
-        if phase != ALL_RED:
-            if tl.axis == "NS": color = "green" if phase == NS_GREEN else ("yellow" if phase == NS_YELLOW else "red")
-            else: color = "green" if phase == EW_GREEN else ("yellow" if phase == EW_YELLOW else "red")
-        img = getattr(assets, f"{'ns' if tl.axis == 'NS' else 'ew'}_traffic_light_{color}")
-        screen.blit(img, tl.pos)
 
     # Люди
     for p in getattr(world, "pedestrians", []):
@@ -37,3 +47,12 @@ def render_frame(screen, assets, font, world, phase, q_ns, q_ew, traffic_lights=
         angle = {"N": 180, "S": 0, "E": 90, "W": -90}.get(v["direction"], 0)
         rot = pygame.transform.rotate(sprite, angle)
         screen.blit(rot, rot.get_rect(center=(int(v["x"]), int(v["y"]))))
+
+   # Светофоры
+    for tl in traffic_lights:
+        color = "red"
+        if phase != ALL_RED:
+            if tl.axis == "NS": color = "green" if phase == NS_GREEN else ("yellow" if phase == NS_YELLOW else "red")
+            else: color = "green" if phase == EW_GREEN else ("yellow" if phase == EW_YELLOW else "red")
+        img = getattr(assets, f"{'ns' if tl.axis == 'NS' else 'ew'}_traffic_light_{color}")
+        screen.blit(img, tl.pos)
