@@ -3,7 +3,10 @@ from __future__ import annotations
 import csv
 import datetime as dtm
 import os
+import uuid
 from typing import Tuple
+
+from db.metrics_store import SQLiteMetricsStore
 
 
 def count_queues(world) -> Tuple[int, int]:
@@ -30,6 +33,7 @@ class EfficiencyLogger:
 
     def __init__(self, mode: str, project_dir: str, interval_seconds: float = 5.0):
         self.mode = mode
+        self.run_id = f"{mode}-{uuid.uuid4().hex[:8]}"
         self.interval = max(1.0, float(interval_seconds))
         self.elapsed = 0.0
         self.total_time = 0.0
@@ -37,6 +41,8 @@ class EfficiencyLogger:
         logs_dir = os.path.join(project_dir, "logs")
         os.makedirs(logs_dir, exist_ok=True)
         self.filepath = os.path.join(logs_dir, f"efficiency_{mode}_{timestamp}.csv")
+        self.db_path = os.path.join(logs_dir, "efficiency.sqlite3")
+        self.store = SQLiteMetricsStore(self.db_path)
         self._file = open(self.filepath, "w", newline="", encoding="utf-8")
         self._writer = csv.writer(self._file)
         self._writer.writerow(
@@ -71,23 +77,38 @@ class EfficiencyLogger:
         pedestrians_exited = int(world.stats.get("pedestrians_exited", 0))
         vehicle_tpm = self._throughput_per_min(vehicles_exited)
         ped_tpm = self._throughput_per_min(pedestrians_exited)
+        sample = {
+            "run_id": self.run_id,
+            "mode": self.mode,
+            "sim_time": sim_time,
+            "vehicles_alive": len(world.vehicles),
+            "pedestrians_alive": len(world.pedestrians),
+            "vehicles_spawned": int(world.stats.get("vehicles_spawned", 0)),
+            "vehicles_exited": vehicles_exited,
+            "pedestrians_spawned": int(world.stats.get("pedestrians_spawned", 0)),
+            "pedestrians_exited": pedestrians_exited,
+            "vehicle_throughput_per_min": vehicle_tpm,
+            "pedestrian_throughput_per_min": ped_tpm,
+        }
 
         self._writer.writerow(
             [
                 f"{sim_time:.2f}",
                 self.mode,
-                len(world.vehicles),
-                len(world.pedestrians),
-                int(world.stats.get("vehicles_spawned", 0)),
+                sample["vehicles_alive"],
+                sample["pedestrians_alive"],
+                sample["vehicles_spawned"],
                 vehicles_exited,
-                int(world.stats.get("pedestrians_spawned", 0)),
+                sample["pedestrians_spawned"],
                 pedestrians_exited,
                 f"{vehicle_tpm:.2f}",
                 f"{ped_tpm:.2f}",
             ]
         )
         self._file.flush()
+        self.store.write_sample(sample)
 
     def close(self) -> None:
         if not self._file.closed:
             self._file.close()
+        self.store.close()

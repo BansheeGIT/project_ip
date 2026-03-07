@@ -2,14 +2,15 @@ from __future__ import annotations
 
 from sim.map import CAMERA_ZONES, in_rect
 from mqtt.client import MqttClient
-from mqtt.topics import LANES, camera_snapshot_topic
+from mqtt.topics import LANES, TopicRegistry
 
 
 class SensorNode:
     """Smart camera node that scans lane rectangles and publishes telemetry."""
 
-    def __init__(self, client: MqttClient) -> None:
+    def __init__(self, client: MqttClient, topics: TopicRegistry) -> None:
         self.client = client
+        self.topics = topics
 
     def publish_snapshots(self, world, timestamp: float) -> None:
         for lane in LANES:
@@ -41,4 +42,4 @@ class SensorNode:
                     if v.get("type") == "emergency" and v.get("sirens_on", False)
                 ),
             }
-            self.client.publish(camera_snapshot_topic(lane), payload)
+            self.client.publish(self.topics.camera_snapshot(lane), payload)

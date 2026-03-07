@@ -1,0 +1,14 @@
+sim_time,mode,vehicles_alive,pedestrians_alive,vehicles_spawned,vehicles_exited,pedestrians_spawned,pedestrians_exited,vehicle_throughput_per_min,pedestrian_throughput_per_min
+5.01,fixed,7,6,7,0,6,0,0.00,0.00
+10.03,fixed,10,10,14,4,10,0,23.92,0.00
+15.07,fixed,15,12,22,7,14,2,27.87,7.96
+20.10,fixed,18,16,29,11,20,4,32.84,11.94
+25.10,fixed,21,17,36,15,24,7,35.85,16.73
+30.11,fixed,23,18,43,20,28,10,39.86,19.93
+35.11,fixed,22,21,48,26,33,12,44.43,20.51
+40.14,fixed,24,26,55,31,38,12,46.34,17.94
+45.18,fixed,25,30,61,36,42,12,47.81,15.94
+50.19,fixed,16,18,62,46,46,28,54.99,33.47
+55.20,fixed,14,22,67,53,52,30,57.61,32.61
+60.23,fixed,20,24,75,55,56,32,54.79,31.88
+65.25,fixed,29,29,86,57,61,32,52.41,29.42

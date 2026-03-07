@@ -3,9 +3,13 @@
 from __future__ import annotations
 
 import sys
+import uuid
 import pygame
 
 from mqtt.client import LocalBroker, MqttClient
+from mqtt.security import build_fernet_security_from_env
+from mqtt.topics import TopicRegistry
+from mqtt.transport import HiveMQBrokerTransport
 from nodes.actuator_node import ActuatorNode
 from nodes.controller_node import ControllerNode
 from nodes.monitor_node import MonitorNode
@@ -45,6 +49,9 @@ class Game:
         sim_height: int,
         project_dir: str,
         mode: str = "fixed",
+        mqtt_transport: str = "hivemq",
+        mqtt_host: str = "broker.hivemq.com",
+        mqtt_port: int = 1883,
         window_width: int = START_WINDOW_WIDTH,
         window_height: int = START_WINDOW_HEIGHT,
     ) -> None:
@@ -55,6 +62,9 @@ class Game:
         self.sim_height = sim_height
         self.project_dir = project_dir
         self.mode = mode
+        self.mqtt_transport = mqtt_transport
+        self.mqtt_host = mqtt_host
+        self.mqtt_port = mqtt_port
 
         self.window_width, self.window_height = self._normalize_window_size(
             window_width, window_height
@@ -110,6 +120,8 @@ class Game:
         self.controller = TrafficController()
         self.broker = None
         self.mqtt_client = None
+        self.mqtt_security = None
+        self.topic_registry = None
         self.sensor_node = None
         self.smart_controller = None
         self.actuator_node = None
@@ -295,16 +307,37 @@ class Game:
 
     def _setup_control_mode(self) -> None:
         if self.mode == "mqtt-smart":
-            self.broker = LocalBroker()
-            self.mqtt_client = MqttClient(self.broker, "game-main")
-            self.sensor_node = SensorNode(self.mqtt_client)
-            self.smart_controller = ControllerNode(self.mqtt_client)
-            self.actuator_node = ActuatorNode(self.mqtt_client)
-            self.monitor_node = MonitorNode(self.mqtt_client)
+            run_topic_prefix = f"traffic/sim/{uuid.uuid4().hex[:8]}"
+            self.topic_registry = TopicRegistry(prefix=run_topic_prefix)
+            if self.mqtt_transport == "hivemq":
+                try:
+                    self.broker = HiveMQBrokerTransport(
+                        client_id=f"sim-{uuid.uuid4().hex[:10]}",
+                        host=self.mqtt_host,
+                        port=self.mqtt_port,
+                    )
+                    self.broker.start()
+                except Exception:
+                    self.broker = LocalBroker()
+            else:
+                self.broker = LocalBroker()
+
+            self.mqtt_security = build_fernet_security_from_env()
+            self.mqtt_client = MqttClient(
+                self.broker,
+                "game-main",
+                security=self.mqtt_security,
+            )
+            self.sensor_node = SensorNode(self.mqtt_client, self.topic_registry)
+            self.smart_controller = ControllerNode(self.mqtt_client, self.topic_registry)
+            self.actuator_node = ActuatorNode(self.mqtt_client, self.topic_registry)
+            self.monitor_node = MonitorNode(self.mqtt_client, self.topic_registry)
             self._set_phase_state(self.smart_controller.current_phase)
         else:
             self.broker = None
             self.mqtt_client = None
+            self.mqtt_security = None
+            self.topic_registry = None
             self.sensor_node = None
             self.smart_controller = None
             self.actuator_node = None
@@ -323,6 +356,8 @@ class Game:
     def _reset_simulation(self) -> None:
         """Recreate world/controller state and keep current GUI tuning values."""
         self.logger.close()
+        if self.mqtt_client is not None:
+            self.mqtt_client.close()
         self.world = World()
         self.spawner = Spawner(self.world)
         self.controller = TrafficController()
@@ -485,6 +520,7 @@ class Game:
         status_lines = [
             f"State: {state_name}",
             f"Mode: {self.mode}",
+            f"MQTT: {self.mqtt_transport}" if self.mode == "mqtt-smart" else "MQTT: off",
             f"Phase: {phase_name}",
             f"Vehicles: {vehicles}",
             f"Pedestrians: {pedestrians}",
@@ -582,5 +618,7 @@ class Game:
             self.draw()
 
         self.logger.close()
+        if self.mqtt_client is not None:
+            self.mqtt_client.close()
         pygame.quit()
         sys.exit()

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from mqtt.client import MqttClient
 from mqtt.schemas import validate_camera_payload
-from mqtt.topics import LANES, SIGNAL_COMMAND, camera_snapshot_topic
+from mqtt.topics import LANES, TopicRegistry
 from traffic.phases import ALL_RED, EW_GREEN, EW_YELLOW, NS_GREEN, NS_YELLOW
 
 
@@ -14,8 +14,9 @@ class ControllerNode:
     ALL_RED_TIME = 1.0
     PEDESTRIAN_WEIGHT = 0.35
 
-    def __init__(self, client: MqttClient) -> None:
+    def __init__(self, client: MqttClient, topics: TopicRegistry) -> None:
         self.client = client
+        self.topics = topics
         self.current_phase = NS_GREEN
         self.next_green_phase = None
         self.timer = 0.0
@@ -33,18 +34,14 @@ class ControllerNode:
         }
 
         for lane in LANES:
-            self.client.subscribe(camera_snapshot_topic(lane), self._on_camera_snapshot)
+            self.client.subscribe(self.topics.camera_snapshot(lane), self._on_camera_snapshot)
 
     def _on_camera_snapshot(self, _topic: str, payload: dict) -> None:
         snapshot = validate_camera_payload(payload)
         self._latest_by_lane[snapshot.lane] = payload
 
     def _axis_score(self, axis: str) -> float:
-        if axis == "NS":
-            lanes = ("N", "S")
-        else:
-            lanes = ("E", "W")
-
+        lanes = ("N", "S") if axis == "NS" else ("E", "W")
         score = 0.0
         for lane in lanes:
             data = self._latest_by_lane[lane]
@@ -68,7 +65,7 @@ class ControllerNode:
 
     def _emit(self, timestamp: float, reason: str) -> str:
         self.client.publish(
-            SIGNAL_COMMAND,
+            self.topics.signal_command,
             {
                 "timestamp": float(timestamp),
                 "mode": "mqtt-smart",
