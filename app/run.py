@@ -16,23 +16,6 @@ def main() -> None:
         default="fixed",
         help="Control mode: fixed timing or mqtt smart control",
     )
-    parser.add_argument(
-        "--mqtt-transport",
-        choices=("hivemq", "local"),
-        default="hivemq",
-        help="Transport used in mqtt-smart mode",
-    )
-    parser.add_argument(
-        "--mqtt-host",
-        default="broker.hivemq.com",
-        help="MQTT broker host (used for hivemq transport)",
-    )
-    parser.add_argument(
-        "--mqtt-port",
-        type=int,
-        default=1883,
-        help="MQTT broker port (used for hivemq transport)",
-    )
     args = parser.parse_args()
 
     # project_dir = .../simulation (where main.py, sim/, traffic/, mqtt/ live)
@@ -42,9 +25,6 @@ def main() -> None:
         sim_height=MAP_HEIGHT,
         project_dir=project_dir,
         mode=args.mode,
-        mqtt_transport=args.mqtt_transport,
-        mqtt_host=args.mqtt_host,
-        mqtt_port=args.mqtt_port,
         window_width=1280,
         window_height=720,
     )

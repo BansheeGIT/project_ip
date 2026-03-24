@@ -46,7 +46,6 @@ def _connect(db_path: str | Path) -> sqlite3.Connection:
 
 
 def list_runs(db_path: str | Path) -> list[RunInfo]:
-    """Return all recorded runs ordered by newest first."""
     conn = _connect(db_path)
     try:
         try:
@@ -66,23 +65,25 @@ def list_runs(db_path: str | Path) -> list[RunInfo]:
             ).fetchall()
         except sqlite3.OperationalError:
             return []
-        return [
-            RunInfo(
-                run_id=row["run_id"],
-                mode=row["mode"],
-                started_at=row["started_at"],
-                finished_at=row["finished_at"],
-                samples=int(row["samples"]),
-                duration_sec=float(row["duration_sec"] or 0.0),
+
+        result = []
+        for row in rows:
+            result.append(
+                RunInfo(
+                    run_id=row["run_id"],
+                    mode=row["mode"],
+                    started_at=row["started_at"],
+                    finished_at=row["finished_at"],
+                    samples=int(row["samples"]),
+                    duration_sec=float(row["duration_sec"] or 0.0),
+                )
             )
-            for row in rows
-        ]
+        return result
     finally:
         conn.close()
 
 
 def summarize_run(db_path: str | Path, run_id: str) -> RunSummary | None:
-    """Aggregate key throughput and final-state metrics for a single run."""
     conn = _connect(db_path)
     try:
         try:
@@ -105,6 +106,7 @@ def summarize_run(db_path: str | Path, run_id: str) -> RunSummary | None:
             ).fetchone()
         except sqlite3.OperationalError:
             return None
+
         if base is None:
             return None
 
@@ -122,6 +124,9 @@ def summarize_run(db_path: str | Path, run_id: str) -> RunSummary | None:
             """,
             (run_id,),
         ).fetchone()
+
+        if final is None:
+            return None
 
         return RunSummary(
             run_id=base["run_id"],
@@ -156,12 +161,13 @@ def latest_run_for_mode(db_path: str | Path, mode: str) -> RunSummary | None:
                 (mode,),
             ).fetchone()
         except sqlite3.OperationalError:
-            row = None
+            return None
     finally:
         conn.close()
 
     if row is None:
         return None
+
     return summarize_run(db_path, row["run_id"])
 
 
@@ -170,7 +176,6 @@ def compare_latest_modes(
     fixed_mode: str = "fixed",
     smart_mode: str = "mqtt-smart",
 ) -> ModeComparison | None:
-    """Compare latest fixed run vs latest smart run."""
     fixed = latest_run_for_mode(db_path, fixed_mode)
     smart = latest_run_for_mode(db_path, smart_mode)
     if fixed is None or smart is None:

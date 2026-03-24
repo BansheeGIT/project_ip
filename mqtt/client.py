@@ -1,22 +1,40 @@
 from __future__ import annotations
 
 import json
+from collections import defaultdict
 from typing import Any, Callable
 
 from .security import FernetSecurity, SecurityError
-from .transport import BrokerTransport, LocalBrokerTransport
 
 
 MessageHandler = Callable[[str, dict], None]
-LocalBroker = LocalBrokerTransport
+WireHandler = Callable[[str, Any], None]
+
+
+class LocalBroker:
+    def __init__(self) -> None:
+        self._subscribers: dict[str, list[WireHandler]] = defaultdict(list)
+
+    def start(self) -> None:
+        return
+
+    def subscribe(self, topic: str, handler: WireHandler) -> None:
+        self._subscribers[topic].append(handler)
+
+    def publish(self, topic: str, payload: Any) -> None:
+        for handler in list(self._subscribers.get(topic, [])):
+            handler(topic, payload)
+
+    def close(self) -> None:
+        self._subscribers.clear()
 
 
 class MqttClient:
-    """MQTT client wrapper with optional Fernet payload encryption."""
+    """MQTT wrapper with optional Fernet payload encryption."""
 
     def __init__(
         self,
-        broker: BrokerTransport,
+        broker: Any,
         client_id: str,
         security: FernetSecurity | None = None,
     ) -> None:
