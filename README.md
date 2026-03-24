@@ -14,9 +14,7 @@ Interactive traffic simulation with two control modes:
   - controller node
   - actuator node
   - monitor node
-- Transport options for MQTT smart mode:
-  - `hivemq` (real broker, default: `broker.hivemq.com`)
-  - `local` (in-process transport)
+- In-process MQTT broker for smart mode (pub/sub inside the app).
 - Optional Fernet encryption for MQTT payloads (`cryptography`).
 - Efficiency logging to:
   - CSV files in `logs/`
@@ -45,22 +43,10 @@ py -m pip install -r requirements.txt
 py main.py --mode fixed
 ```
 
-### 2) MQTT smart mode over HiveMQ
+### 2) MQTT smart mode
 
 ```bash
-py main.py --mode mqtt-smart --mqtt-transport hivemq
-```
-
-Optional broker override:
-
-```bash
-py main.py --mode mqtt-smart --mqtt-transport hivemq --mqtt-host broker.hivemq.com --mqtt-port 1883
-```
-
-### 3) MQTT smart mode with local transport
-
-```bash
-py main.py --mode mqtt-smart --mqtt-transport local
+py main.py --mode mqtt-smart
 ```
 
 ## MQTT Security (Fernet)
@@ -101,12 +87,11 @@ If you see `No runs found`, run the simulation first in at least one mode.
 - `app/` - application runtime and game loop
 - `sim/` - world, entities, spawner, metrics
 - `traffic/` - fixed controller logic and phases
-- `mqtt/` - client, transport, topics, schemas, security
+- `mqtt/` - client, topics, schemas, security
 - `nodes/` - sensor/controller/actuator/monitor nodes
 - `db/` - SQLite persistence and report queries
 - `tests/` - unit/integration tests
 
 ## Notes
 
-- Public broker topics are namespaced per run to avoid collisions.
-- Smart mode falls back to local transport if remote broker connection fails.
+- Topics are namespaced per run to avoid collisions.
