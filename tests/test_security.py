@@ -1,31 +1,89 @@
 import pytest
 
-from mqtt.client import LocalBroker, MqttClient
+from mqtt.client import MqttClient
 from mqtt.security import FernetSecurity, is_fernet_available
 from mqtt.schemas import validate_camera_payload
-from mqtt.topics import TopicRegistry, camera_snapshot_topic
+from mqtt.topics import TopicRegistry
 from nodes.actuator_node import ActuatorNode
 from nodes.controller_node import ControllerNode
 from traffic.phases import EW_GREEN
 
-<<<<<<< HEAD
 
-=======
+class _FakePahoMessage:
+    def __init__(self, topic, payload):
+        self.topic = topic
+        self.payload = payload
+
+
+class _FakePahoBroker:
+    def __init__(self):
+        self.clients = []
+
+    def register(self, client):
+        self.clients.append(client)
+
+    def publish(self, topic, payload):
+        for client in self.clients:
+            if topic in client.subscriptions and client.on_message:
+                client.on_message(client, None, _FakePahoMessage(topic, payload))
+
+
+class _FakePahoClient:
+    def __init__(self, client_id=None, protocol=None):
+        self.client_id = client_id
+        self.protocol = protocol
+        self.subscriptions = set()
+        self.on_connect = None
+        self.on_message = None
+        self._broker = _FakePahoBrokerSingleton.INSTANCE
+
+    def connect(self, host, port, keepalive):
+        self._broker.register(self)
+        if self.on_connect:
+            self.on_connect(self, None, None, 0)
+
+    def connect_async(self, host, port, keepalive):
+        self.connect(host, port, keepalive)
+
+    def loop_start(self):
+        return None
+
+    def subscribe(self, topic):
+        self.subscriptions.add(topic)
+
+    def publish(self, topic, payload):
+        self._broker.publish(topic, payload)
+
+    def loop_stop(self):
+        return None
+
+    def disconnect(self):
+        return None
+
+
+class _FakePahoBrokerSingleton:
+    INSTANCE = _FakePahoBroker()
+
+
+@pytest.fixture(autouse=True)
+def _patch_mqtt_client(monkeypatch):
+    import mqtt.client as mqtt_client_module
+
+    # Fresh broker per test case.
+    _FakePahoBrokerSingleton.INSTANCE = _FakePahoBroker()
+    monkeypatch.setattr(mqtt_client_module.mqtt, "Client", _FakePahoClient)
+
+
 # Missing camera fields should raise an error.
->>>>>>> master
 def test_camera_payload_validation_requires_fields():
     with pytest.raises(ValueError):
         validate_camera_payload({"lane": "N"})
 
-<<<<<<< HEAD
 
-=======
 # One siren should be enough to change the smart decision.
->>>>>>> master
 def test_smart_controller_prioritizes_siren_axis():
-    broker = LocalBroker()
     topics = TopicRegistry(prefix="test/security")
-    client = MqttClient(broker, "test")
+    client = MqttClient(client_id="test")
     controller = ControllerNode(client, topics)
     actuator = ActuatorNode(client, topics)
 
@@ -50,19 +108,14 @@ def test_smart_controller_prioritizes_siren_axis():
     assert phase == EW_GREEN
     assert actuator.current_phase == EW_GREEN
 
-<<<<<<< HEAD
 
 @pytest.mark.skipif(not is_fernet_available(), reason="cryptography is not installed")
-=======
-@pytest.mark.skipif(not is_fernet_available(), reason="cryptography is not installed")
 # Same key should let encrypted messages round-trip.
->>>>>>> master
 def test_encrypted_publish_subscribe_roundtrip():
-    broker = LocalBroker()
     key = FernetSecurity.generate_key()
     security = FernetSecurity(key=key)
-    publisher = MqttClient(broker, "publisher", security=security)
-    subscriber = MqttClient(broker, "subscriber", security=security)
+    publisher = MqttClient(client_id="publisher", security=security)
+    subscriber = MqttClient(client_id="subscriber", security=security)
 
     received = []
     subscriber.subscribe("demo/topic", lambda _topic, payload: received.append(payload))
@@ -70,19 +123,14 @@ def test_encrypted_publish_subscribe_roundtrip():
 
     assert received == [{"value": 42, "ok": True}]
 
-<<<<<<< HEAD
 
 @pytest.mark.skipif(not is_fernet_available(), reason="cryptography is not installed")
-=======
-@pytest.mark.skipif(not is_fernet_available(), reason="cryptography is not installed")
 # Wrong keys should drop the encrypted message.
->>>>>>> master
 def test_encrypted_message_dropped_with_wrong_key():
-    broker = LocalBroker()
     key_a = FernetSecurity.generate_key()
     key_b = FernetSecurity.generate_key()
-    publisher = MqttClient(broker, "publisher", security=FernetSecurity(key=key_a))
-    subscriber = MqttClient(broker, "subscriber", security=FernetSecurity(key=key_b))
+    publisher = MqttClient(client_id="publisher", security=FernetSecurity(key=key_a))
+    subscriber = MqttClient(client_id="subscriber", security=FernetSecurity(key=key_b))
 
     received = []
     subscriber.subscribe("demo/topic", lambda _topic, payload: received.append(payload))

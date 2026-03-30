@@ -2,16 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-<<<<<<< HEAD
-
-@dataclass(frozen=True)
-class CameraSnapshot:
-=======
 @dataclass(frozen=True)
 # Clean camera data ends up in this shape.
 class CameraSnapshot:
     # The smart controller reads this cleaned data shape.
->>>>>>> master
     lane: str
     timestamp: float
     vehicle_count: int
@@ -22,10 +16,7 @@ class CameraSnapshot:
 
 
 @dataclass(frozen=True)
-<<<<<<< HEAD
-=======
 # Clean signal commands use this shape.
->>>>>>> master
 class SignalCommand:
     timestamp: float
     mode: str
@@ -33,13 +24,9 @@ class SignalCommand:
     reason: str
 
 
-<<<<<<< HEAD
-def validate_camera_payload(payload: dict) -> CameraSnapshot:
-=======
 # Clean and check one camera payload.
 def validate_camera_payload(payload: dict) -> CameraSnapshot:
     # Check required fields first, then clean up types and negatives.
->>>>>>> master
     required = {
         "lane",
         "timestamp",
@@ -65,13 +52,9 @@ def validate_camera_payload(payload: dict) -> CameraSnapshot:
     )
 
 
-<<<<<<< HEAD
-def validate_signal_payload(payload: dict) -> SignalCommand:
-=======
 # Clean and check one signal payload.
 def validate_signal_payload(payload: dict) -> SignalCommand:
     # Do the same validation for controller commands.
->>>>>>> master
     required = {"timestamp", "mode", "phase", "reason"}
     missing = required.difference(payload)
     if missing:
