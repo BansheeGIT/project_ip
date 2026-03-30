@@ -3,11 +3,11 @@ from pathlib import Path
 from db.metrics_store import SQLiteMetricsStore
 from db.report_queries import compare_latest_modes, list_runs, summarize_run
 
-
+# Tiny helper for writing one test sample.
 def _write(store: SQLiteMetricsStore, **kwargs):
     store.write_sample(kwargs)
 
-
+# Report helpers should compare fixed and smart runs.
 def test_report_queries_compare_modes(tmp_path: Path):
     db_path = tmp_path / "efficiency.sqlite3"
     store = SQLiteMetricsStore(db_path)

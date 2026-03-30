@@ -1,0 +1,2 @@
+sim_time,mode,vehicles_alive,pedestrians_alive,vehicles_spawned,vehicles_exited,pedestrians_spawned,pedestrians_exited,vehicle_throughput_per_min,pedestrian_throughput_per_min
+5.01,fixed,7,5,7,0,5,0,0.00,0.00

@@ -3,26 +3,26 @@ from traffic.phases import ALL_RED, EW_GREEN, NS_GREEN, NS_YELLOW
 from sim.pedestrians import Pedestrian
 from sim.world import World
 
-
+# Green should stay on a bit longer here.
 def test_controller_keeps_green_before_20_seconds():
     controller = TrafficController()
     phase = controller.decide(19.9, queue_ns=999, queue_ew=999)
     assert phase == NS_GREEN
 
-
+# After 20 seconds, fixed mode should start switching.
 def test_controller_switches_after_20_seconds():
     controller = TrafficController()
     phase = controller.decide(20.1, queue_ns=0, queue_ew=0)
     assert phase == NS_YELLOW
 
-
+# Emergency override should pick the matching axis.
 def test_controller_emergency_preemption_forces_axis_green():
     controller = TrafficController()
     controller.set_preemption(True, "EW")
     phase = controller.decide(1.0, queue_ns=100, queue_ew=0)
     assert phase == "EW_GREEN"
 
-
+# A siren car near the line should trigger preemption.
 def test_world_preemption_detects_approaching_emergency():
     world = World()
     world.vehicles = []
@@ -33,7 +33,7 @@ def test_world_preemption_detects_approaching_emergency():
     assert active is True
     assert axis == "NS"
 
-
+# Yellow should move to all-red next.
 def test_controller_yellow_to_all_red_transition():
     controller = TrafficController()
     controller.current_phase = NS_YELLOW
@@ -41,7 +41,7 @@ def test_controller_yellow_to_all_red_transition():
     phase = controller.decide(0.02, queue_ns=0, queue_ew=0)
     assert phase == ALL_RED
 
-
+# A car past the line should keep moving on red.
 def test_vehicle_after_stop_line_does_not_stop_on_red():
     world = World()
     world.vehicles = []
@@ -52,7 +52,7 @@ def test_vehicle_after_stop_line_does_not_stop_on_red():
     world.step(0.2)
     assert car["current_speed"] > 0.0
 
-
+# A pedestrian ahead should make the car slow down.
 def test_vehicle_stops_for_pedestrian_in_same_lane():
     world = World()
     world.vehicles = []
@@ -69,7 +69,7 @@ def test_vehicle_stops_for_pedestrian_in_same_lane():
     world.step(0.2)
     assert car["current_speed"] < 200.0
 
-
+# On red, the pedestrian should wait at the curb.
 def test_pedestrian_waits_at_curb_on_red():
     pedestrian = Pedestrian(740, 430, "EW")
     pedestrian.velocity = [100.0, 0.0]
@@ -78,7 +78,7 @@ def test_pedestrian_waits_at_curb_on_red():
         pedestrian.update(0.1)
     assert pedestrian.position[0] <= pedestrian.WAIT_X_LEFT
 
-
+# Pedestrians should only move on their own axis.
 def test_pedestrian_signal_axis_mapping():
     world = World()
     world.pedestrians = []
@@ -92,7 +92,7 @@ def test_pedestrian_signal_axis_mapping():
     world.update_pedestrians(0.01, phase=NS_GREEN)
     assert ped.active is False
 
-
+# Cars should still leave a gap after one step.
 def test_vehicle_gap_enforced_after_step():
     world = World()
     world.vehicles = []
@@ -105,7 +105,7 @@ def test_vehicle_gap_enforced_after_step():
     lead, trail = cars[0], cars[1]
     assert (lead["y"] - trail["y"]) >= 100.0
 
-
+# Red light should keep the car at or before the line.
 def test_vehicle_does_not_overshoot_stop_line_on_red():
     world = World()
     world.vehicles = []

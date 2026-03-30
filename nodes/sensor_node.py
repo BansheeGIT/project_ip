@@ -5,41 +5,43 @@ from mqtt.client import MqttClient
 from mqtt.topics import LANES, TopicRegistry
 
 
+# Sensor node turns world objects into lane counts.
 class SensorNode:
-    """Smart camera node that scans lane rectangles and publishes telemetry."""
-
+    # Save MQTT links used for camera snapshots.
     def __init__(self, client: MqttClient, topics: TopicRegistry) -> None:
         self.client = client
         self.topics = topics
 
+    # Publish one summary for each lane.
     def publish_snapshots(self, world, timestamp: float) -> None:
+        # Each lane gets one small camera-like summary.
         for lane in LANES:
             zone = CAMERA_ZONES[lane]
 
             vehicles = []
-            for vehicle in world.vehicles:
-                if vehicle.get("direction") != lane:
+            for v in world.vehicles:
+                if v.get("direction") != lane:
                     continue
-                if in_rect((vehicle["x"], vehicle["y"]), zone):
-                    vehicles.append(vehicle)
+                if in_rect((v["x"], v["y"]), zone):
+                    vehicles.append(v)
 
             pedestrians = [
-                ped
-                for ped in world.pedestrians
-                if in_rect((ped.position[0], ped.position[1]), zone)
+                p for p in world.pedestrians
+                if in_rect((p.position[0], p.position[1]), zone)
             ]
 
+            # Send counts, not whole objects.
             payload = {
                 "lane": lane,
-                "timestamp": float(timestamp),
+                "timestamp": timestamp,
                 "vehicle_count": len(vehicles),
-                "stopped_vehicle_count": sum(1 for v in vehicles if v.get("is_stopped", False)),
+                "stopped_vehicle_count": sum(1 for v in vehicles if v.get("is_stopped")),
                 "pedestrian_count": len(pedestrians),
                 "emergency_vehicle_count": sum(1 for v in vehicles if v.get("type") == "emergency"),
                 "emergency_siren_count": sum(
-                    1
-                    for v in vehicles
-                    if v.get("type") == "emergency" and v.get("sirens_on", False)
+                    1 for v in vehicles 
+                    if v.get("type") == "emergency" and v.get("sirens_on")
                 ),
             }
+            
             self.client.publish(self.topics.camera_snapshot(lane), payload)
