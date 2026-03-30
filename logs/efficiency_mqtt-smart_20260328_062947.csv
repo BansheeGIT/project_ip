@@ -1,0 +1,7 @@
+sim_time,mode,vehicles_alive,pedestrians_alive,vehicles_spawned,vehicles_exited,pedestrians_spawned,pedestrians_exited,vehicle_throughput_per_min,pedestrian_throughput_per_min
+5.02,mqtt-smart,7,6,7,0,6,0,0.00,0.00
+10.04,mqtt-smart,10,10,14,4,10,0,23.90,0.00
+15.04,mqtt-smart,15,12,22,7,14,2,27.92,7.98
+20.06,mqtt-smart,18,18,29,11,20,2,32.90,5.98
+25.09,mqtt-smart,21,22,33,12,24,2,28.69,4.78
+30.10,mqtt-smart,13,18,35,22,28,10,43.86,19.94

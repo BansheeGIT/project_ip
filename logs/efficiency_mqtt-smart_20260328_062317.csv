@@ -1,0 +1,1 @@
+sim_time,mode,vehicles_alive,pedestrians_alive,vehicles_spawned,vehicles_exited,pedestrians_spawned,pedestrians_exited,vehicle_throughput_per_min,pedestrian_throughput_per_min
