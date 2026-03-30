@@ -8,20 +8,12 @@ from nodes.actuator_node import ActuatorNode
 from nodes.controller_node import ControllerNode
 from traffic.phases import EW_GREEN
 
-<<<<<<< HEAD
-
-=======
 # Missing camera fields should raise an error.
->>>>>>> master
 def test_camera_payload_validation_requires_fields():
     with pytest.raises(ValueError):
         validate_camera_payload({"lane": "N"})
 
-<<<<<<< HEAD
-
-=======
 # One siren should be enough to change the smart decision.
->>>>>>> master
 def test_smart_controller_prioritizes_siren_axis():
     broker = LocalBroker()
     topics = TopicRegistry(prefix="test/security")
@@ -50,13 +42,8 @@ def test_smart_controller_prioritizes_siren_axis():
     assert phase == EW_GREEN
     assert actuator.current_phase == EW_GREEN
 
-<<<<<<< HEAD
-
-@pytest.mark.skipif(not is_fernet_available(), reason="cryptography is not installed")
-=======
 @pytest.mark.skipif(not is_fernet_available(), reason="cryptography is not installed")
 # Same key should let encrypted messages round-trip.
->>>>>>> master
 def test_encrypted_publish_subscribe_roundtrip():
     broker = LocalBroker()
     key = FernetSecurity.generate_key()
@@ -70,13 +57,8 @@ def test_encrypted_publish_subscribe_roundtrip():
 
     assert received == [{"value": 42, "ok": True}]
 
-<<<<<<< HEAD
-
-@pytest.mark.skipif(not is_fernet_available(), reason="cryptography is not installed")
-=======
 @pytest.mark.skipif(not is_fernet_available(), reason="cryptography is not installed")
 # Wrong keys should drop the encrypted message.
->>>>>>> master
 def test_encrypted_message_dropped_with_wrong_key():
     broker = LocalBroker()
     key_a = FernetSecurity.generate_key()
