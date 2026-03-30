@@ -1,4 +1,5 @@
 import os
+<<<<<<< HEAD
 # Signed changes: Abdil
 
 # Базовые настройки путей - Abdil
@@ -18,6 +19,23 @@ OUT_OF_BOUNDS = {
 }
 
 # Координаты стоп-линий (где останавливаться на красный) - Abdil
+=======
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ASSETS_DIR = os.path.join(BASE_DIR, "assets")
+
+DIRECTIONS = ["N", "S", "E", "W"]
+
+# If a vehicle goes past these points, we remove it from the sim.
+OUT_OF_BOUNDS = {
+    "N": (960, 1100),
+    "S": (960, -100),
+    "E": (-100, 540),
+    "W": (2000, 540),
+}
+
+# Cars should stop near these lines when the light is red.
+>>>>>>> master
 STOP_LINES = {
     "N": {"y": 250}, 
     "S": {"y": 795},
@@ -25,6 +43,7 @@ STOP_LINES = {
     "E": {"x": 1245},
 }
 
+<<<<<<< HEAD
 # Traffic light sprite anchors (kept in one shared place).
 TRAFFIC_LIGHT_POS = [
     {
@@ -38,6 +57,15 @@ TRAFFIC_LIGHT_POS = [
 ]
 
 # Common desktop window presets for simulation display scaling. - Abdil
+=======
+# Traffic light sprite positions on the map.
+TRAFFIC_LIGHT_POS = [
+    {"axis": "NS", "center": (600, 160)},
+    {"axis": "EW", "center": (900, 440)},
+]
+
+# A few ready-made window sizes for the GUI.
+>>>>>>> master
 WINDOW_SIZE_PRESETS = {
     "HD": (1280, 720),
     "FULL_HD": (1920, 1080),
@@ -45,6 +73,7 @@ WINDOW_SIZE_PRESETS = {
     "UHD_4K": (3840, 2160),
 }
 
+<<<<<<< HEAD
 
 def get_window_preset(name: str) -> tuple[int, int]:
     """Returns a preset window size by name (e.g., HD, FULL_HD, QHD, UHD_4K)."""
@@ -53,3 +82,9 @@ def get_window_preset(name: str) -> tuple[int, int]:
         available = ", ".join(WINDOW_SIZE_PRESETS.keys())
         raise KeyError(f"Unknown window preset '{name}'. Available: {available}")
     return WINDOW_SIZE_PRESETS[normalized]
+=======
+# Return a saved window size by name.
+def get_window_preset(name):
+    # Fall back to HD if the name is unknown.
+    return WINDOW_SIZE_PRESETS.get(name.upper(), (1280, 720))
+>>>>>>> master

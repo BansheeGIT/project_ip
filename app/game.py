@@ -1,5 +1,8 @@
+<<<<<<< HEAD
 # app/game.py
 # Signed changes: Abdil_Super
+=======
+>>>>>>> master
 from __future__ import annotations
 
 import sys
@@ -30,9 +33,16 @@ from ui.controls import (
     draw_panel_background,
 )
 
+<<<<<<< HEAD
 
 class Game:
     # Reserve a fixed side panel for GUI controls and live telemetry.
+=======
+# Main window and sim loop live here.
+class Game:
+    # Game ties the simulation, UI, and control mode together.
+    # Sizes for the right panel and its small button.
+>>>>>>> master
     PANEL_WIDTH = 360
     TOGGLE_W = 28
     TOGGLE_H = 56
@@ -42,6 +52,10 @@ class Game:
     MIN_VIEW_WIDTH = 200
     MIN_WINDOW_HEIGHT = 360
 
+<<<<<<< HEAD
+=======
+    # Get the window, sim, and side panel ready.
+>>>>>>> master
     def __init__(
         self,
         sim_width: int,
@@ -99,7 +113,11 @@ class Game:
         # Existing debug overlay remains available (F3).
         self.cursor_overlay = CursorOverlay(enabled=True)
 
+<<<<<<< HEAD
         # Runtime stats shown in the GUI panel.
+=======
+        # These values are shown in the side panel.
+>>>>>>> master
         self.phase = NS_GREEN
         self.queue_ns = 0
         self.queue_ew = 0
@@ -133,18 +151,34 @@ class Game:
         self._build_controls()
         self._apply_spawn_rates()
 
+<<<<<<< HEAD
+=======
+    # Do not let the window get too small.
+>>>>>>> master
     def _normalize_window_size(self, width: int, height: int) -> tuple[int, int]:
         min_window_width = self.PANEL_WIDTH + self.MIN_VIEW_WIDTH
         normalized_width = max(min_window_width, int(width))
         normalized_height = max(self.MIN_WINDOW_HEIGHT, int(height))
         return normalized_width, normalized_height
 
+<<<<<<< HEAD
     def _panel_open_x(self) -> float:
         return float(self.window_width - self.PANEL_WIDTH)
 
     def _panel_closed_x(self) -> float:
         return float(self.window_width)
 
+=======
+    # Where the panel sits when it is open.
+    def _panel_open_x(self) -> float:
+        return float(self.window_width - self.PANEL_WIDTH)
+
+    # Where the panel sits when it is hidden.
+    def _panel_closed_x(self) -> float:
+        return float(self.window_width)
+
+    # Small hit box for the panel arrow.
+>>>>>>> master
     def _toggle_rect(self) -> pygame.Rect:
         return pygame.Rect(
             self.window_width - self.TOGGLE_W,
@@ -153,11 +187,19 @@ class Game:
             self.TOGGLE_H,
         )
 
+<<<<<<< HEAD
+=======
+    # Recalculate the visible sim area after a size change.
+>>>>>>> master
     def _recompute_viewport(self) -> None:
         # Panel is an overlay; simulation viewport always matches full window.
         self.view_width = self.window_width
         self.view_height = self.window_height
 
+<<<<<<< HEAD
+=======
+    # Resize the window and keep the panel in a sane place.
+>>>>>>> master
     def _resize_window(self, width: int, height: int) -> None:
         old_visible_panel_w = max(0, self.window_width - int(self.panel_x))
         self.window_width, self.window_height = self._normalize_window_size(width, height)
@@ -170,6 +212,10 @@ class Game:
         )
         self._position_controls(int(self.panel_x))
 
+<<<<<<< HEAD
+=======
+    # Build all buttons and sliders in the side panel.
+>>>>>>> master
     def _build_controls(self) -> None:
         """Create side-panel buttons/sliders and assign callbacks."""
         left = int(self.panel_x) + 16
@@ -177,7 +223,11 @@ class Game:
         button_h = 42
         y = 250
 
+<<<<<<< HEAD
         # Core runtime actions.
+=======
+        # Main buttons.
+>>>>>>> master
         self.run_button = Button(
             rect=(left, y, full_w, button_h),
             label="Pause [Space]",
@@ -254,7 +304,11 @@ class Game:
             suffix="x",
         )
 
+<<<<<<< HEAD
         # Keep a flat list for generic event dispatch and drawing.
+=======
+        # One list makes event handling easier.
+>>>>>>> master
         self.buttons = [
             self.run_button,
             self.reset_button,
@@ -266,6 +320,10 @@ class Game:
         ]
         self._position_controls(int(self.panel_x))
 
+<<<<<<< HEAD
+=======
+    # Move controls when the panel slides left or right.
+>>>>>>> master
     def _position_controls(self, panel_left_x: int) -> None:
         """Keep panel controls aligned while the panel slides horizontally."""
         if not self.buttons:
@@ -288,6 +346,10 @@ class Game:
         if self.load_slider is not None:
             self.load_slider.track_rect.x = left
 
+<<<<<<< HEAD
+=======
+    # Sync the UI phase with the world phase.
+>>>>>>> master
     def _set_phase_state(self, phase: str) -> None:
         """Apply chosen phase to both UI state and world light axis."""
         self.phase = phase
@@ -299,7 +361,13 @@ class Game:
         else:
             self.world.green_axis = ""
 
+<<<<<<< HEAD
     def _setup_control_mode(self) -> None:
+=======
+    # Choose smart mode or fixed mode.
+    def _setup_control_mode(self) -> None:
+        # Smart mode connects MQTT parts. Fixed mode stays local.
+>>>>>>> master
         if self.mode == "mqtt-smart":
             run_topic_prefix = f"traffic/sim/{uuid.uuid4().hex[:8]}"
             self.topic_registry = TopicRegistry(prefix=run_topic_prefix)
@@ -328,15 +396,27 @@ class Game:
             self.monitor_node = None
             self._set_phase_state(self.controller.current_phase)
 
+<<<<<<< HEAD
+=======
+    # Scale car spawn timing from the current traffic load.
+>>>>>>> master
     def _apply_spawn_rates(self) -> None:
         """Scale per-direction spawn intervals by the current traffic load."""
         for direction, base_rate in self.base_spawn_rates.items():
             self.spawner.RATES[direction] = base_rate / self.traffic_load
 
+<<<<<<< HEAD
+=======
+    # Pause or resume the simulation.
+>>>>>>> master
     def _toggle_pause(self) -> None:
         """Pause or resume simulation updates."""
         self.paused = not self.paused
 
+<<<<<<< HEAD
+=======
+    # Reset the world but keep the current UI settings.
+>>>>>>> master
     def _reset_simulation(self) -> None:
         """Recreate world/controller state and keep current GUI tuning values."""
         self.logger.close()
@@ -353,6 +433,10 @@ class Game:
         self._setup_control_mode()
         self.logger = EfficiencyLogger(mode=self.mode, project_dir=self.project_dir)
 
+<<<<<<< HEAD
+=======
+    # Manual phase switch for fixed mode.
+>>>>>>> master
     def _toggle_phase(self) -> None:
         """Manual override: force the controller to switch traffic phase."""
         if self.mode == "mqtt-smart":
@@ -360,10 +444,18 @@ class Game:
         self.controller.switch_phase()
         self._set_phase_state(self.controller.current_phase)
 
+<<<<<<< HEAD
+=======
+    # Spawn one car from a chosen direction.
+>>>>>>> master
     def _spawn_vehicle(self, direction: str) -> None:
         """Manual vehicle injection for quick scenario testing."""
         self.spawner.spawn_car(direction)
 
+<<<<<<< HEAD
+=======
+    # Read input events and send them to the right place.
+>>>>>>> master
     def handle_events(self) -> None:
         """Route input to widgets, keyboard shortcuts, then optional debug overlay."""
         self._position_controls(int(self.panel_x))
@@ -421,6 +513,10 @@ class Game:
             if not consumed:
                 self.cursor_overlay.handle_event(event)
 
+<<<<<<< HEAD
+=======
+    # Advance one frame of simulation time.
+>>>>>>> master
     def update(self, dt: float) -> None:
         """Advance simulation using current panel settings."""
         dx = self.panel_target_x - self.panel_x
@@ -444,6 +540,7 @@ class Game:
             self.queue_ns, self.queue_ew = count_queues(self.world)
             return
 
+<<<<<<< HEAD
         # Speed slider scales effective simulation time.
         scaled_dt = dt * self.sim_speed
         self.sim_time += scaled_dt
@@ -451,6 +548,16 @@ class Game:
         # Standard simulation pipeline.
         self.spawner.step(scaled_dt)
         self.queue_ns, self.queue_ew = count_queues(self.world)
+=======
+        # Speed slider makes time go faster or slower.
+        scaled_dt = dt * self.sim_speed
+        self.sim_time += scaled_dt
+
+        # Usual update order.
+        self.spawner.step(scaled_dt)
+        self.queue_ns, self.queue_ew = count_queues(self.world)
+        # Both modes use the same world. They pick lights in different ways.
+>>>>>>> master
         if self.mode == "mqtt-smart":
             self.sensor_node.publish_snapshots(self.world, self.sim_time)
             self.smart_controller.decide(scaled_dt, self.sim_time)
@@ -465,6 +572,10 @@ class Game:
         self.world.step(scaled_dt)
         self.logger.step(self.world, scaled_dt, self.sim_time)
 
+<<<<<<< HEAD
+=======
+    # Paint stats, controls, and help text on the right.
+>>>>>>> master
     def _draw_panel(self, panel_left_x: int) -> None:
         """Draw side-panel shell, status telemetry, controls, and help text."""
         panel_rect = pygame.Rect(
@@ -524,7 +635,11 @@ class Game:
         controls_header = self.panel_small_font.render("Controls", True, SECTION_COLOR)
         self.screen.blit(controls_header, (panel_left_x + 20, 220))
 
+<<<<<<< HEAD
         # Keep button label synchronized with pause state.
+=======
+        # Button text changes when pause changes.
+>>>>>>> master
         self.run_button.set_label("Resume [Space]" if self.paused else "Pause [Space]")
         for button in self.buttons:
             button.draw(self.screen)
@@ -548,10 +663,18 @@ class Game:
             self.screen.blit(text, (panel_left_x + 20, y))
             y += 22
 
+<<<<<<< HEAD
+=======
+    # Open or close the side panel.
+>>>>>>> master
     def _toggle_panel(self) -> None:
         self.panel_open = not self.panel_open
         self.panel_target_x = self._panel_open_x() if self.panel_open else self._panel_closed_x()
 
+<<<<<<< HEAD
+=======
+    # Draw the little arrow button for the panel.
+>>>>>>> master
     def _draw_toggle_button(self) -> None:
         toggle_rect = self._toggle_rect()
         mouse_over = toggle_rect.collidepoint(pygame.mouse.get_pos())
@@ -567,8 +690,14 @@ class Game:
             arrow_points = [(cx + 4, cy - 9), (cx + 4, cy + 9), (cx - 7, cy)]
         pygame.draw.polygon(self.screen, TEXT_COLOR, arrow_points)
 
+<<<<<<< HEAD
     def draw(self) -> None:
         # Draw simulation at native resolution, then scale to the full window.
+=======
+    # Render one frame and show it on screen.
+    def draw(self) -> None:
+        # Draw on the sim surface first, then scale to the window.
+>>>>>>> master
         render_frame(
             screen=self.sim_surface,
             assets=self.assets,
@@ -593,6 +722,10 @@ class Game:
         self.cursor_overlay.draw(self.screen)
         pygame.display.update()
 
+<<<<<<< HEAD
+=======
+    # Run the main loop until the window closes.
+>>>>>>> master
     def run(self) -> None:
         """Main loop: input, update, draw at target FPS."""
         while self.running:

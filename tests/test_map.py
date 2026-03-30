@@ -7,6 +7,7 @@ from sim.map import (
     STOP_LINES,
     in_rect,
 )
+<<<<<<< HEAD
 
 def test_map_dimensions():
     assert MAP_WIDTH == 1920
@@ -20,6 +21,21 @@ def test_stop_lines_order():
     assert STOP_LINES["N"]["y"] < STOP_LINES["S"]["y"]
 
 
+=======
+# Map size should stay the expected size.
+def test_map_dimensions():
+    assert MAP_WIDTH == 1920
+    assert MAP_HEIGHT == 1080
+# North camera zone should cover the road part we expect.
+def test_camera_zone_north():
+    assert in_rect((900, 350), CAMERA_ZONES["N"]) is True
+    assert in_rect((900, 200), CAMERA_ZONES["N"]) is False
+# North stop line should come before south.
+def test_stop_lines_order():
+    assert STOP_LINES["N"]["y"] < STOP_LINES["S"]["y"]
+
+# Lane x-positions should match right-hand traffic.
+>>>>>>> master
 def test_vertical_lanes_follow_right_hand_traffic():
     assert LANE_CENTERS["N"]["x"] < LANE_CENTERS["S"]["x"]
     assert SPAWN_POINTS["N"][0] < SPAWN_POINTS["S"][0]
