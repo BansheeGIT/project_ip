@@ -4,7 +4,7 @@ import sys
 import uuid
 import pygame
 
-from mqtt.client import LocalBroker, MqttClient
+from mqtt.client import MqttClient
 from mqtt.security import build_fernet_security_from_env
 from mqtt.topics import TopicRegistry
 from nodes.actuator_node import ActuatorNode
@@ -58,7 +58,7 @@ class Game:
         self.sim_height = sim_height
         self.project_dir = project_dir
         self.mode = mode
-        self.mqtt_transport = "local"
+        self.mqtt_transport = "network"
 
         self.window_width, self.window_height = self._normalize_window_size(
             window_width, window_height
@@ -112,7 +112,6 @@ class Game:
         self.world = World()
         self.spawner = Spawner(self.world)
         self.controller = TrafficController()
-        self.broker = None
         self.mqtt_client = None
         self.mqtt_security = None
         self.topic_registry = None
@@ -314,13 +313,10 @@ class Game:
         if self.mode == "mqtt-smart":
             run_topic_prefix = f"traffic/sim/{uuid.uuid4().hex[:8]}"
             self.topic_registry = TopicRegistry(prefix=run_topic_prefix)
-            self.broker = LocalBroker()
-            self.broker.start()
 
             self.mqtt_security = build_fernet_security_from_env()
             self.mqtt_client = MqttClient(
-                self.broker,
-                "game-main",
+                client_id="game-main",
                 security=self.mqtt_security,
             )
             self.sensor_node = SensorNode(self.mqtt_client, self.topic_registry)
@@ -329,7 +325,6 @@ class Game:
             self.monitor_node = MonitorNode(self.mqtt_client, self.topic_registry)
             self._set_phase_state(self.smart_controller.current_phase)
         else:
-            self.broker = None
             self.mqtt_client = None
             self.mqtt_security = None
             self.topic_registry = None

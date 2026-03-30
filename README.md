@@ -14,7 +14,7 @@ Interactive traffic simulation with two control modes:
   - controller node
   - actuator node
   - monitor node
-- In-process MQTT broker for smart mode (pub/sub inside the app).
+- Network MQTT broker for smart mode: `broker.hivemq.com` (public broker).
 - Optional Fernet encryption for MQTT payloads (`cryptography`).
 - Efficiency logging to:
   - CSV files in `logs/`
